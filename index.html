@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IOE Grade Calculator with Reevaluation Logic</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            font-size: 14px;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        input[type="number"] {
+            width: 50px;
+            padding: 5px;
+            text-align: center;
+            font-size: 14px;
+        }
+        input[type="text"] {
+            width: 95%;
+            padding: 5px;
+            font-size: 14px;
+        }
+        .subject-title {
+            width: 250px;
+            min-width: 250px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .remove-btn {
+            background-color: #f44336;
+            color: white;
+            padding: 2px 5px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .remove-btn:hover {
+            background-color: #d32f2f;
+        }
+        .result-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .subject-row:nth-child(odd) {
+            background-color: #f9f9f9;
+        }
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+        }
+        .grade-info {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .adjusted {
+            background-color: #ffffcc;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 250px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -125px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        .reevaluation-info {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #e0f7fa;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .switch-container {
+            margin: 10px 0;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #4CAF50;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .marks-breakdown {
+            font-size: 12px;
+            color: #666;
+        }
+        .total-column {
+            background-color: #f0f8ff;
+        }
+        .summary-table {
+            width: 100%;
+            margin-top: 10px;
+            border-collapse: collapse;
+        }
+        .summary-table th, .summary-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .summary-table th {
+            background-color: #f2f2f2;
+        }
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        .action-column {
+            width: 60px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>IOE Grade Calculator</h1>
+        
+        <div class="switch-container">
+            <label class="switch">
+                <input type="checkbox" id="reevaluation-toggle" checked>
+                <span class="slider"></span>
+            </label>
+            <span> Enable Reevaluation Logic</span>
+            <div class="tooltip">ⓘ
+                <span class="tooltiptext">When enabled, assessment marks will be adjusted if there's a significant difference with final exam performance.</span>
+            </div>
+        </div>
+
+        <div class="reevaluation-info">
+            <strong>Reevaluation Logic:</strong> If the difference between assessment and final marks percentages is more than 20%, 
+            assessment marks will be adjusted using the formula:<br>
+            <code>Adjusted Marks = Original Marks × [1 - (ABS(Assessment% - Final%) - 20%) × 2]</code><br>
+            Adjusted cells will be highlighted in yellow.
+        </div>
+        
+        <table id="marksheet">
+            <thead>
+                <tr>
+                    <th colspan="3">Subjects</th>
+                    <th colspan="2">Full Marks</th>
+                    <th colspan="2">Pass Mark</th>
+                    <th colspan="2">Marks Obtained</th>
+                    <th>Adjusted Assessment</th>
+                    <th>Total Marks</th>
+                    <th>% Obtained</th>
+                    <th>Grade</th>
+                </tr>
+                <tr>
+                    <th>Code</th>
+                    <th>Title</th>
+                    <th class="action-column">Action</th>
+                    <th>Asst.</th>
+                    <th>Final</th>
+                    <th>Asst.</th>
+                    <th>Final</th>
+                    <th>Asst.</th>
+                    <th>Final</th>
+                    <th></th>
+                    <th class="total-column"></th>
+                    <th></th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="subject-rows">
+                <!-- Default subjects will be added by JavaScript -->
+            </tbody>
+        </table>
+        
+        <div class="button-container">
+            <button onclick="addSubject()">Add Subject</button>
+            <button onclick="calculateGrades()">Calculate Grades</button>
+        </div>
+        
+        <div class="result-section">
+            <h2>Results Summary</h2>
+            <table class="summary-table">
+                <tr>
+                    <th>Total Full Marks:</th>
+                    <td id="total-full-marks">-</td>
+                    <th>Total Marks Obtained:</th>
+                    <td id="total-marks-obtained">-</td>
+                </tr>
+                <tr>
+                    <th>Overall Percentage:</th>
+                    <td id="overall-percentage">-</td>
+                    <th>Overall Grade:</th>
+                    <td id="overall-grade">-</td>
+                </tr>
+                <tr>
+                    <th>Grade Point Average (GPA):</th>
+                    <td id="gpa">-</td>
+                    <th>Result:</th>
+                    <td id="result">-</td>
+                </tr>
+                <tr>
+                    <th colspan="2">Date:</th>
+                    <td colspan="2" id="date"></td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="grade-info">
+            <h3>Grading Scale</h3>
+            <ul>
+                <li>A: 90-100% (4.0)</li>
+                <li>A-: 80-89.9% (3.7)</li>
+                <li>B+: 70-79.9% (3.3)</li>
+                <li>B: 55-69.9% (3.0)</li>
+                <li>C: 50-54.9% (2.0)</li>
+                <li>F: Below 50% (0.0)</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Based on IOE Grading System</p>
+    </div>
+
+    <script>
+        // Set current date
+        document.getElementById('date').textContent = new Date().toLocaleDateString();
+        
+        // Default subjects from the marksheet
+        const defaultSubjects = [
+            { code: "CE101", title: "Engineering Mechanics", fullAsst: 40, fullFinal: 60, passAsst: 16, passFinal: 24, marksAsst: 33, marksFinal: 46 },
+            { code: "CE102", title: "Engineering Geology I", fullAsst: 20, fullFinal: 30, passAsst: 8, passFinal: 12, marksAsst: 15, marksFinal: 20 },
+            { code: "CE102", title: "Engineering Geology I (Practical)", fullAsst: 25, fullFinal: 0, passAsst: 10, passFinal: 0, marksAsst: 25, marksFinal: 0 },
+            { code: "CE103", title: "Civil Engineering Materials", fullAsst: 20, fullFinal: 30, passAsst: 8, passFinal: 12, marksAsst: 17, marksFinal: 20 },
+            { code: "CE103", title: "Civil Engineering Materials (Practical)", fullAsst: 25, fullFinal: 0, passAsst: 10, passFinal: 0, marksAsst: 22, marksFinal: 0 },
+            { code: "CT101", title: "Computer Programming", fullAsst: 40, fullFinal: 60, passAsst: 16, passFinal: 24, marksAsst: 32, marksFinal: 41 },
+            { code: "CT101", title: "Computer Programming (Practical)", fullAsst: 50, fullFinal: 0, passAsst: 20, passFinal: 0, marksAsst: 47, marksFinal: 0 },
+            { code: "EE103", title: "Basic Electrical & Electronics Engineering", fullAsst: 40, fullFinal: 60, passAsst: 16, passFinal: 24, marksAsst: 37, marksFinal: 52 },
+            { code: "EE103", title: "Basic Electrical & Electronics Engineering (Practical)", fullAsst: 25, fullFinal: 0, passAsst: 10, passFinal: 0, marksAsst: 17, marksFinal: 0 },
+            { code: "SH101", title: "Engineering Mathematics I", fullAsst: 40, fullFinal: 60, passAsst: 16, passFinal: 24, marksAsst: 39, marksFinal: 52 },
+            { code: "SH103", title: "Engineering Chemistry", fullAsst: 40, fullFinal: 60, passAsst: 16, passFinal: 24, marksAsst: 32, marksFinal: 48 },
+            { code: "SH103", title: "Engineering Chemistry (Practical)", fullAsst: 25, fullFinal: 0, passAsst: 10, passFinal: 0, marksAsst: 20, marksFinal: 0 }
+        ];
+        
+        // Add default subjects
+        defaultSubjects.forEach(subject => {
+            addSubjectWithValues(subject);
+        });
+        
+        function addSubjectWithValues(subject) {
+            const tbody = document.getElementById('subject-rows');
+            const newRow = document.createElement('tr');
+            newRow.className = 'subject-row';
+            newRow.innerHTML = `
+                <td><input type="text" value="${subject.code}" class="code"></td>
+                <td><input type="text" value="${subject.title}" class="title subject-title"></td>
+                <td><button class="remove-btn" onclick="removeSubject(this)">Remove</button></td>
+                <td><input type="number" value="${subject.fullAsst}" class="fullMarksAsst"></td>
+                <td><input type="number" value="${subject.fullFinal}" class="fullMarksFinal"></td>
+                <td><input type="number" value="${subject.passAsst}" class="passMarkAsst"></td>
+                <td><input type="number" value="${subject.passFinal}" class="passMarkFinal"></td>
+                <td><input type="number" value="${subject.marksAsst}" class="marksAsst" min="0"></td>
+                <td><input type="number" value="${subject.marksFinal}" class="marksFinal" min="0"></td>
+                <td class="adjustedAsst">-</td>
+                <td class="total total-column">-</td>
+                <td class="percentage">-</td>
+                <td class="grade">-</td>
+            `;
+            tbody.appendChild(newRow);
+        }
+        
+        function addSubject() {
+            const tbody = document.getElementById('subject-rows');
+            const newRow = document.createElement('tr');
+            newRow.className = 'subject-row';
+            newRow.innerHTML = `
+                <td><input type="text" placeholder="Code" class="code"></td>
+                <td><input type="text" placeholder="Subject Title" class="title subject-title"></td>
+                <td><button class="remove-btn" onclick="removeSubject(this)">Remove</button></td>
+                <td><input type="number" value="40" class="fullMarksAsst"></td>
+                <td><input type="number" value="60" class="fullMarksFinal"></td>
+                <td><input type="number" value="16" class="passMarkAsst"></td>
+                <td><input type="number" value="24" class="passMarkFinal"></td>
+                <td><input type="number" class="marksAsst" min="0"></td>
+                <td><input type="number" class="marksFinal" min="0"></td>
+                <td class="adjustedAsst">-</td>
+                <td class="total total-column">-</td>
+                <td class="percentage">-</td>
+                <td class="grade">-</td>
+            `;
+            tbody.appendChild(newRow);
+        }
+        
+        function removeSubject(button) {
+            const row = button.closest('tr');
+            row.parentNode.removeChild(row);
+            calculateGrades();
+        }
+        
+        function calculateGrades() {
+            const rows = document.querySelectorAll('.subject-row');
+            let totalGradePoints = 0;
+            let totalCredits = 0;
+            let failCount = 0;
+            let totalFullMarksSum = 0;
+            let totalMarksObtainedSum = 0;
+            const reevaluationEnabled = document.getElementById('reevaluation-toggle').checked;
+            
+            rows.forEach(row => {
+                // Get values
+                const fullMarksAsst = parseFloat(row.querySelector('.fullMarksAsst').value) || 0;
+                const fullMarksFinal = parseFloat(row.querySelector('.fullMarksFinal').value) || 0;
+                const passMarkAsst = parseFloat(row.querySelector('.passMarkAsst').value) || 0;
+                const passMarkFinal = parseFloat(row.querySelector('.passMarkFinal').value) || 0;
+                const marksAsst = parseFloat(row.querySelector('.marksAsst').value) || 0;
+                const marksFinal = parseFloat(row.querySelector('.marksFinal').value) || 0;
+                
+                // Calculate total full marks for this subject
+                const totalFullMarks = fullMarksAsst + fullMarksFinal;
+                totalFullMarksSum += totalFullMarks;
+                
+                // Calculate percentages for assessment and final
+                let asstPercentage = fullMarksAsst > 0 ? (marksAsst / fullMarksAsst) * 100 : 0;
+                let finalPercentage = fullMarksFinal > 0 ? (marksFinal / fullMarksFinal) * 100 : 0;
+                
+                // Initialize adjusted assessment marks
+                let adjustedAsstMarks = marksAsst;
+                let adjustedAsstCell = row.querySelector('.adjustedAsst');
+                adjustedAsstCell.textContent = marksAsst.toFixed(1);
+                adjustedAsstCell.classList.remove('adjusted');
+                
+                // Apply reevaluation logic if enabled and both components have marks
+                if (reevaluationEnabled && fullMarksAsst > 0 && fullMarksFinal > 0) {
+                    let percentageDiff = Math.abs(asstPercentage - finalPercentage);
+                    
+                    if (percentageDiff > 20) {
+                        // Apply the adjustment formula
+                        const adjustmentFactor = 1 - ((percentageDiff - 20) * 0.02);
+                        adjustedAsstMarks = marksAsst * adjustmentFactor;
+                        
+                        // Ensure the adjusted marks are not less than the pass mark
+                        adjustedAsstMarks = Math.max(adjustedAsstMarks, passMarkAsst);
+                        
+                        // Update UI to show adjustment
+                        adjustedAsstCell.textContent = adjustedAsstMarks.toFixed(1);
+                        adjustedAsstCell.classList.add('adjusted');
+                        
+                        // Add tooltip to show calculation
+                        adjustedAsstCell.title = `Original: ${marksAsst.toFixed(1)}, Diff: ${percentageDiff.toFixed(1)}%, Factor: ${adjustmentFactor.toFixed(2)}`;
+                    }
+                }
+                
+                // Calculate total with adjusted assessment marks
+                const totalMarks = adjustedAsstMarks + marksFinal;
+                totalMarksObtainedSum += totalMarks;
+                
+                // Calculate percentage
+                const percentage = totalFullMarks > 0 ? (totalMarks / totalFullMarks) * 100 : 0;
+                
+                // Determine grade based on the revised grading system
+                let grade = '-';
+                let gradePoints = 0;
+                
+                // Check if failed in either component
+                let failed = false;
+                if (fullMarksAsst > 0 && adjustedAsstMarks < passMarkAsst) failed = true;
+                if (fullMarksFinal > 0 && marksFinal < passMarkFinal) failed = true;
+                
+                if (failed) {
+                    grade = 'F';
+                    gradePoints = 0.0;
+                    failCount++;
+                } else {
+                    if (percentage >= 90) {
+                        grade = 'A';
+                        gradePoints = 4.0;
+                    } else if (percentage >= 80) {
+                        grade = 'A-';
+                        gradePoints = 3.7;
+                    } else if (percentage >= 70) {
+                        grade = 'B+';
+                        gradePoints = 3.3;
+                    } else if (percentage >= 55) {
+                        grade = 'B';
+                        gradePoints = 3.0;
+                    } else if (percentage >= 50) {
+                        grade = 'C';
+                        gradePoints = 2.0;
+                    } else {
+                        grade = 'F';
+                        gradePoints = 0.0;
+                        failCount++;
+                    }
+                }
+                
+                // Update row with calculated values
+                row.querySelector('.total').textContent = totalMarks.toFixed(1);
+                row.querySelector('.percentage').textContent = percentage.toFixed(1) + '%';
+                row.querySelector('.grade').textContent = grade;
+                
+                // Add to totals (considering credit weight based on full marks)
+                if (totalFullMarks > 0) {
+                    const creditWeight = totalFullMarks / 100;
+                    totalGradePoints += gradePoints * creditWeight;
+                    totalCredits += creditWeight;
+                }
+            });
+            
+            // Calculate overall percentage
+            const overallPercentage = totalFullMarksSum > 0 ? 
+                (totalMarksObtainedSum / totalFullMarksSum) * 100 : 0;
+            
+            // Determine overall grade based on the revised grading system
+            let overallGrade = '-';
+            let fixedGPA = '-';
+            
+            if (totalCredits > 0) {
+                if (overallPercentage >= 90) {
+                    overallGrade = 'A';
+                    fixedGPA = '4.0';
+                }
+                else if (overallPercentage >= 80) {
+                    overallGrade = 'A-';
+                    fixedGPA = '3.7';
+                }
+                else if (overallPercentage >= 70) {
+                    overallGrade = 'B+';
+                    fixedGPA = '3.3';
+                }
+                else if (overallPercentage >= 55) {
+                    overallGrade = 'B';
+                    fixedGPA = '3.0';
+                }
+                else if (overallPercentage >= 50) {
+                    overallGrade = 'C';
+                    fixedGPA = '2.0';
+                }
+                else {
+                    overallGrade = 'F';
+                    fixedGPA = '0.0';
+                }
+            }
+            
+            // Determine result
+            const result = failCount > 0 ? 'Fail' : 'Pass';
+            
+            // Update summary
+            document.getElementById('total-full-marks').textContent = totalFullMarksSum.toFixed(0);
+            document.getElementById('total-marks-obtained').textContent = totalMarksObtainedSum.toFixed(1);
+            document.getElementById('overall-percentage').textContent = overallPercentage.toFixed(1) + '%';
+            document.getElementById('overall-grade').textContent = overallGrade;
+            document.getElementById('gpa').textContent = fixedGPA;
+            document.getElementById('result').textContent = result;
+        }
+        
+        // Add event listener for reevaluation toggle
+        document.getElementById('reevaluation-toggle').addEventListener('change', calculateGrades);
+        
+        // Calculate grades on page load
+        window.onload = calculateGrades;
+    </script>
+</body>
+</html>
